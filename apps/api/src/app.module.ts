@@ -12,14 +12,27 @@ import { TenantsModule } from './modules/tenants/tenants.module';
 import { WebhookEventsModule } from './modules/webhook-events/webhook-events.module';
 import { WebhookSourcesModule } from './modules/webhook-sources/webhook-sources.module';
 
+function getRedisConnection() {
+  if (process.env.REDIS_URL) {
+    const url = new URL(process.env.REDIS_URL);
+    return {
+      host: url.hostname,
+      port: Number(url.port),
+      password: url.password || undefined,
+      username: url.username || undefined,
+    };
+  }
+  return {
+    host: process.env.REDIS_HOST ?? '127.0.0.1',
+    port: Number(process.env.REDIS_PORT ?? 6379),
+  };
+}
+
 @Module({
   imports: [
     MongooseModule.forRoot(process.env.MONGODB_URI ?? 'mongodb://127.0.0.1:27017/debales-webhook'),
     BullModule.forRoot({
-      connection: {
-        host: process.env.REDIS_HOST ?? '127.0.0.1',
-        port: Number(process.env.REDIS_PORT ?? 6379),
-      },
+      connection: getRedisConnection(),
     }),
     ActionsModule,
     TenantsModule,
@@ -33,4 +46,4 @@ import { WebhookSourcesModule } from './modules/webhook-sources/webhook-sources.
   ],
   controllers: [AppController],
 })
-export class AppModule {}
+export class AppModule { }

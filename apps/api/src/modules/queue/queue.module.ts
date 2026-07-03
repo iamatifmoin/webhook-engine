@@ -17,6 +17,22 @@ import {
 } from './queue.constants';
 import { QueueDebugController } from './queue-debug.controller';
 
+function getRedisConnection() {
+  if (process.env.REDIS_URL) {
+    const url = new URL(process.env.REDIS_URL);
+    return {
+      host: url.hostname,
+      port: Number(url.port),
+      password: url.password || undefined,
+      username: url.username || undefined,
+    };
+  }
+  return {
+    host: process.env.REDIS_HOST ?? '127.0.0.1',
+    port: Number(process.env.REDIS_PORT ?? 6379),
+  };
+}
+
 @Module({
   imports: [
     BullModule.registerQueue({
@@ -38,7 +54,7 @@ export class QueueModule implements OnModuleInit, OnModuleDestroy {
     private readonly dispatchProcessor: DispatchProcessor,
     private readonly evaluateProcessor: EvaluateProcessor,
     private readonly jobRecordsService: JobRecordsService,
-  ) {}
+  ) { }
 
   onModuleInit(): void {
     this.worker = new Worker<DispatchActionsJobData | EvaluateRulesJobData>(
@@ -57,10 +73,7 @@ export class QueueModule implements OnModuleInit, OnModuleDestroy {
         throw new Error(`Unsupported queue job "${job.name}"`);
       },
       {
-        connection: {
-          host: process.env.REDIS_HOST ?? '127.0.0.1',
-          port: Number(process.env.REDIS_PORT ?? 6379),
-        },
+        connection: getRedisConnection(),
         concurrency: 10,
         stalledInterval: 10000,
         maxStalledCount: 1,
