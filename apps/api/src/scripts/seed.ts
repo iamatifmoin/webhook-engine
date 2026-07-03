@@ -44,7 +44,7 @@ function resolveDemoEchoUrl(): string {
     return 'http://localhost:8888/echo';
   }
 
-  return `http://127.0.0.1:${Number(process.env.PORT ?? process.env.API_PORT ?? 3000)}/demo/echo`;
+  return 'https://debalesapi-production.up.railway.app/demo/echo';
 }
 
 async function seed() {
@@ -225,4 +225,5 @@ seed().catch(async (error) => {
   await mongoose.disconnect();
   process.exitCode = 1;
 });
+
 
