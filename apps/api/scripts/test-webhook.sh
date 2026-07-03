@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-API_URL="${API_URL:-http://localhost:3000}"
+API_URL="${API_URL:-https://debalesapi-production.up.railway.app}"
 
 send_request() {
   local label="$1"
@@ -28,12 +28,7 @@ send_request() {
 }
 
 acme_body='{"order":{"id":"1001","total_price":750,"customer_email":"buyer@test.com"}}'
-acme_signature="$(
-  printf '%s' "$acme_body" \
-    | openssl dgst -sha256 -hmac 'shopify_acme_secret' -binary \
-    | base64 \
-    | tr -d '\r\n'
-)"
+acme_signature="$(printf '%s' "$acme_body" | openssl dgst -sha256 -hmac 'shopify_acme_secret' -binary | base64 | tr -d '\r\n')"
 
 send_request "Acme high-value order" "$API_URL/webhooks/shopify-acme" "$acme_body" \
   -H "X-Tenant-Api-Key: key_acme_abc123" \
@@ -50,11 +45,7 @@ send_request "Acme duplicate delivery" "$API_URL/webhooks/shopify-acme" "$acme_b
   -H "X-Shopify-Hmac-Sha256: $acme_signature"
 
 beta_body='{"amount":1500,"payment_id":"pay_002","customer_email":"buyer@test.com"}'
-beta_signature="$(
-  printf '%s%s' "$beta_body" 'stripe_beta_secret' \
-    | openssl dgst -sha256 -hex \
-    | awk '{print $2}'
-)"
+beta_signature="$(printf '%s%s' "$beta_body" 'stripe_beta_secret' | openssl dgst -sha256 -hex | awk '{print $2}')"
 
 send_request "Beta guaranteed-failure path" "$API_URL/webhooks/stripe-beta" "$beta_body" \
   -H "X-Tenant-Api-Key: key_beta_def456" \

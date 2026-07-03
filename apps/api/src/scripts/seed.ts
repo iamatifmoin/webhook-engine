@@ -15,8 +15,40 @@ function sha256(value: string): string {
   return createHash('sha256').update(value).digest('hex');
 }
 
+function resolveDemoEchoUrl(): string {
+  const explicitUrl = process.env.DEMO_ECHO_URL?.trim();
+  if (explicitUrl) {
+    return explicitUrl;
+  }
+
+  const publicApiUrl =
+    process.env.PUBLIC_API_URL?.trim() ||
+    process.env.API_PUBLIC_URL?.trim() ||
+    process.env.APP_PUBLIC_URL?.trim();
+
+  if (publicApiUrl) {
+    return `${publicApiUrl.replace(/\/$/, '')}/demo/echo`;
+  }
+
+  const mongoUri = process.env.MONGODB_URI?.trim() ?? '';
+  const redisHost = process.env.REDIS_HOST?.trim() ?? '';
+  const looksLocal =
+    mongoUri.includes('localhost') ||
+    mongoUri.includes('127.0.0.1') ||
+    mongoUri.includes('mongo:') ||
+    redisHost === 'localhost' ||
+    redisHost === '127.0.0.1' ||
+    redisHost === 'redis';
+
+  if (looksLocal) {
+    return 'http://localhost:8888/echo';
+  }
+
+  return 'https://debalesapi-production.up.railway.app/demo/echo';
+}
+
 async function seed() {
-  const mongoUri = process.env.MONGODB_URI ?? 'mongodb://127.0.0.1:27017/debales-webhook';
+  const mongoUri = process.env.MONGODB_URI ?? 'mongodb://mongo:SbeICKUovVHaGGergylEnPniFzQmNvEg@hayabusa.proxy.rlwy.net:55851';
   await mongoose.connect(mongoUri);
 
   const connection = mongoose.connection;
@@ -60,6 +92,8 @@ async function seed() {
     },
   ]);
 
+  const demoEchoUrl = resolveDemoEchoUrl();
+
   const rules = await AutomationRuleModel.create([
     {
       tenantId: acmeTenant._id,
@@ -78,19 +112,11 @@ async function seed() {
         {
           type: 'http_dispatch',
           config: {
-            url: 'http://localhost:8888/echo',
+            url: demoEchoUrl,
             method: 'POST',
             headers: {
               'Content-Type': 'application/json',
             },
-          },
-        },
-        {
-          type: 'email_notify',
-          config: {
-            to: 'sales@acme.com',
-            subject: 'High-value order received',
-            bodyTemplate: 'Order {{order.id}} totalling ${{order.total_price}} received.',
           },
         },
       ],
@@ -125,12 +151,17 @@ async function seed() {
           operator: 'gt',
           value: 100,
         },
+        {
+          field: 'amount',
+          operator: 'lt',
+          value: 1000,
+        },
       ],
       actions: [
         {
           type: 'http_dispatch',
           config: {
-            url: 'http://localhost:8888/echo',
+            url: demoEchoUrl,
             method: 'POST',
             headers: {
               'Content-Type': 'application/json',
@@ -194,3 +225,4 @@ seed().catch(async (error) => {
   await mongoose.disconnect();
   process.exitCode = 1;
 });
+
