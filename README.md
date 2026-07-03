@@ -53,7 +53,7 @@ If you want to exercise the webhook flow end to end from the shell, run:
 npm run test:webhook
 ```
 
-The helper defaults to the deployed API. Set `API_URL=http://localhost:3000` if you want to point it at a local stack instead.
+The helper defaults to the local API. Set `API_URL=http://localhost:3000` if you want to point it at your local API explicitly.
 
 ## Seeded Demo Data
 
@@ -151,8 +151,8 @@ Retry and recovery behavior:
 Set these first:
 
 ```powershell
-$API_URL = 'https://debalesapi-production.up.railway.app'
-$DASHBOARD_URL = 'https://webhook-engine-web.vercel.app'
+$API_URL = 'http://localhost:3000'
+$DASHBOARD_URL = 'http://localhost:3001'
 
 function Get-ShopifySignature([string]$Body) {
   $key = [System.Text.Encoding]::UTF8.GetBytes('shopify_acme_secret')
@@ -302,7 +302,6 @@ The order I would change things in is:
 3. move dedup to Redis
 4. split queue capacity by tenant tier
 5. tune Mongo write concern and read scaling
-
 
 
 

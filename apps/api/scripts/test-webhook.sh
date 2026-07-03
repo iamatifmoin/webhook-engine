@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-API_URL="${API_URL:-https://debalesapi-production.up.railway.app}"
+API_URL="${API_URL:-http://localhost:3000}"
 
 send_request() {
   local label="$1"

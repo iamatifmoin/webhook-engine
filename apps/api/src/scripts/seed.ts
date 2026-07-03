@@ -21,15 +21,6 @@ function resolveDemoEchoUrl(): string {
     return explicitUrl;
   }
 
-  const publicApiUrl =
-    process.env.PUBLIC_API_URL?.trim() ||
-    process.env.API_PUBLIC_URL?.trim() ||
-    process.env.APP_PUBLIC_URL?.trim();
-
-  if (publicApiUrl) {
-    return `${publicApiUrl.replace(/\/$/, '')}/demo/echo`;
-  }
-
   const mongoUri = process.env.MONGODB_URI?.trim() ?? '';
   const redisHost = process.env.REDIS_HOST?.trim() ?? '';
   const looksLocal =
@@ -44,11 +35,11 @@ function resolveDemoEchoUrl(): string {
     return 'http://localhost:8888/echo';
   }
 
-  return 'https://debalesapi-production.up.railway.app/demo/echo';
+  return 'http://localhost:8888/echo';
 }
 
 async function seed() {
-  const mongoUri = process.env.MONGODB_URI ?? 'mongodb://mongo:SbeICKUovVHaGGergylEnPniFzQmNvEg@hayabusa.proxy.rlwy.net:55851';
+  const mongoUri = process.env.MONGODB_URI ?? 'mongodb://localhost:27017/debales-webhook';
   await mongoose.connect(mongoUri);
 
   const connection = mongoose.connection;

@@ -30,7 +30,7 @@ function getRedisConnection() {
 
 @Module({
   imports: [
-    MongooseModule.forRoot(process.env.MONGODB_URI ?? 'mongodb://mongo:SbeICKUovVHaGGergylEnPniFzQmNvEg@hayabusa.proxy.rlwy.net:55851'),
+    MongooseModule.forRoot(process.env.MONGODB_URI ?? 'mongodb://localhost:27017/debales-webhook'),
     BullModule.forRoot({
       connection: getRedisConnection(),
     }),
