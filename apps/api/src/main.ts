@@ -9,14 +9,15 @@ async function bootstrap() {
   });
 
   app.enableCors({
-    origin: 'http://localhost:3001',
+    origin: process.env.CORS_ORIGIN ?? 'http://localhost:3001',
     credentials: true,
   });
 
   app.useGlobalFilters(new HttpExceptionFilter());
   app.useGlobalInterceptors(new LoggingInterceptor());
 
-  await app.listen(Number(process.env.API_PORT ?? 3000));
+  const port = process.env.PORT ? Number(process.env.PORT) : Number(process.env.API_PORT ?? 3000);
+  await app.listen(port);
 }
 
 void bootstrap();
