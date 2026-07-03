@@ -18,10 +18,6 @@ interface IngestWebhookParams {
   tenant: TenantDocument;
 }
 
-function isDuplicateKeyError(error: unknown): error is { code: number } {
-  return typeof error === 'object' && error !== null && 'code' in error && error.code === 11000;
-}
-
 @Injectable()
 export class IngestionService {
   constructor(
@@ -41,49 +37,55 @@ export class IngestionService {
     const eventType = this.resolveEventType(eventTypeHeader, body);
     const idempotencyKey =
       idempotencyKeyHeader?.trim() ||
-      sha256Hex(
-        String(tenant._id),
-        String(source._id),
-        eventType,
-        stableStringify(body),
-      );
+      sha256Hex(String(tenant._id), String(source._id), eventType, stableStringify(body));
 
-    let webhookEvent: WebhookEventDocument;
+    const dedupFilter = {
+      tenantId: tenant._id,
+      idempotencyKey,
+    };
 
-    try {
-      webhookEvent = await this.webhookEventModel.create({
-        tenantId: tenant._id,
-        sourceId: source._id,
-        eventType,
-        payload: body,
-        idempotencyKey,
-        status: WebhookEventStatus.Queued,
-      });
-    } catch (error) {
-      if (isDuplicateKeyError(error)) {
-        // Duplicate deliveries are acknowledged with 200 so external webhook providers do not retry forever.
-        await this.webhookEventModel
-          .updateOne(
-            {
-              tenantId: tenant._id,
-              idempotencyKey,
-              status: { $ne: WebhookEventStatus.Duplicate },
+    const upsertResult = await this.webhookEventModel
+      .updateOne(
+        dedupFilter,
+        {
+          $setOnInsert: {
+            tenantId: tenant._id,
+            sourceId: source._id,
+            eventType,
+            payload: body,
+            idempotencyKey,
+            status: WebhookEventStatus.Queued,
+            receivedAt: new Date(),
+          },
+        },
+        { upsert: true },
+      )
+      .exec();
+
+    if ((upsertResult.upsertedCount ?? 0) === 0) {
+      await this.webhookEventModel
+        .updateOne(
+          {
+            ...dedupFilter,
+            status: { $ne: WebhookEventStatus.Duplicate },
+          },
+          {
+            $set: {
+              status: WebhookEventStatus.Duplicate,
             },
-            {
-              $set: {
-                status: WebhookEventStatus.Duplicate,
-              },
-            },
-          )
-          .exec();
+          },
+        )
+        .exec();
 
-        return {
-          acknowledged: true,
-          duplicate: true,
-        };
-      }
+      return {
+        acknowledged: true,
+        duplicate: true,
+      };
+    }
 
-      throw error;
+    const webhookEvent = await this.webhookEventModel.findOne(dedupFilter).exec();
+    if (!webhookEvent) {
+      throw new Error('Webhook event was not found after upsert');
     }
 
     try {

@@ -44,7 +44,7 @@ function resolveDemoEchoUrl(): string {
     return 'http://localhost:8888/echo';
   }
 
-  return 'https://debalesapi-production.up.railway.app/demo/echo';
+  return `http://127.0.0.1:${Number(process.env.PORT ?? process.env.API_PORT ?? 3000)}/demo/echo`;
 }
 
 async function seed() {
