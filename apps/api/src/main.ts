@@ -17,7 +17,7 @@ async function bootstrap() {
   app.useGlobalInterceptors(new LoggingInterceptor());
 
   const port = process.env.PORT ? Number(process.env.PORT) : Number(process.env.API_PORT ?? 3000);
-  await app.listen(port);
+  await app.listen(port, '0.0.0.0');
 }
 
 void bootstrap();
